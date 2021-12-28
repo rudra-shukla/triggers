@@ -1,0 +1,40 @@
+trigger dupliCon on Contact (before insert,before update, after undelete) {
+    List<Contact> contactList = new List<Contact>();
+    Set<String> newEmailSet = new Set<String>();
+    Set<String> existingEmailSet = new Set<String>();
+    if (Trigger.isBefore && ( Trigger.isInsert || Trigger.isUpdate )) {
+        contactList = Trigger.New;
+    } 
+    if ( Trigger.IsAfter && Trigger.isUndelete ) {
+        contactList = Trigger.New;
+    }
+    // Step 2 - Add new emails into a Set
+    for ( Contact con : contactList ) {
+        if ( con.Email != null ) {
+            newEmailSet.add(con.Email);
+        }
+    }
+    // Step 3 - Make a SQOL on Contact Object to get the Duplicate Records 
+    // 3 New . Contact (test@gmail.com, test1@gmail.com, test2@gmail.com)
+    // 10000 Contact - 
+    // 0 Records
+    List<Contact> existingContactList = [Select Id, Email From Contact 
+                                         Where Email IN: newEmailSet AND Email != null];
+    // Step 4
+    for (Contact con : existingContactList ) {
+        existingEmailSet.add(con.Email);
+    }
+    
+    // Step 5 
+    
+    for ( Contact con : contactList ) { // the list we are inserting or updating
+        if ( existingEmailSet.contains( con.Email ) ) {
+            con.Email.AddError(' Duplicate Email is not Allowed ');
+        } else {
+            existingEmailSet.add(con.Email);
+        }
+    }
+    
+    
+
+}
